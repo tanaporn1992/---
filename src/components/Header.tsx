@@ -1,13 +1,16 @@
 import React from 'react';
 import { User } from 'firebase/auth';
 import { formatCurrency, formatThaiMonthYear } from '../utils/thaiDate';
-import { Zap, Droplets, Calendar, PenSquare, LogOut, CheckCircle2, TableProperties } from 'lucide-react';
+import { Zap, Droplets, Calendar, PenSquare, LogOut, CheckCircle2, TableProperties, Smartphone, ShieldCheck, ArrowRightLeft } from 'lucide-react';
+import { PortalMode } from './NavigationTabs';
 
 interface HeaderProps {
   selectedMonth: string;
   onMonthChange: (month: string) => void;
   onOpenWalkthrough: () => void;
   onOpenBuildingSheet?: () => void;
+  portalMode?: PortalMode;
+  onTogglePortal?: () => void;
   totalRooms: number;
   recordedCount: number;
   totalRevenue: number;
@@ -22,6 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
   onMonthChange,
   onOpenWalkthrough,
   onOpenBuildingSheet,
+  portalMode = 'recorder',
+  onTogglePortal,
   totalRooms,
   recordedCount,
   totalRevenue,
@@ -45,8 +50,12 @@ export const Header: React.FC<HeaderProps> = ({
                 <h1 className="text-lg md:text-xl font-bold tracking-wide">
                   ระบบจดมิเตอร์น้ำ-ไฟฟ้าและออกใบแจ้งหนี้
                 </h1>
-                <span className="text-[11px] bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full font-medium hidden sm:inline">
-                  หอพักนักศึกษา
+                <span className={`text-[11px] border px-2 py-0.5 rounded-full font-bold hidden sm:inline ${
+                  portalMode === 'recorder'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+                    : 'bg-indigo-500/20 text-indigo-300 border-indigo-400/30'
+                }`}>
+                  {portalMode === 'recorder' ? '📱 โหมดผู้จดมิเตอร์' : '📊 โหมดหลังบ้าน & รายงาน'}
                 </span>
               </div>
               <p className="text-xs text-blue-200/80">
@@ -72,23 +81,42 @@ export const Header: React.FC<HeaderProps> = ({
               />
             </div>
 
-            {/* Quick Button to Image/PDF Meter Report */}
-            <button
-              onClick={() => onOpenBuildingSheet ? onOpenBuildingSheet() : onOpenWalkthrough()}
-              className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold px-3 py-2 rounded-xl text-xs sm:text-sm flex items-center space-x-1.5 shadow-md transition-all cursor-pointer ring-1 ring-indigo-300/40"
-            >
-              <TableProperties className="w-4 h-4 text-indigo-200" />
-              <span>รายงานรูปภาพมิเตอร์</span>
-            </button>
+            {/* Quick Portal Switcher Button */}
+            {onTogglePortal && (
+              <button
+                onClick={onTogglePortal}
+                title={portalMode === 'recorder' ? 'คลิกเพื่อสลับไปหน้าหลังบ้าน & รายงาน' : 'คลิกเพื่อสลับไปหน้าผู้จดมิเตอร์'}
+                className={`active:scale-95 text-white font-bold px-3 py-2 rounded-xl text-xs sm:text-sm flex items-center space-x-1.5 shadow-md transition-all cursor-pointer ring-1 ${
+                  portalMode === 'recorder'
+                    ? 'bg-indigo-600/90 hover:bg-indigo-500 ring-indigo-400/40'
+                    : 'bg-emerald-600/90 hover:bg-emerald-500 ring-emerald-400/40'
+                }`}
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5 text-white" />
+                <span>
+                  {portalMode === 'recorder' ? 'สลับไปหน้าหลังบ้าน & รายงาน' : 'สลับไปหน้าผู้จดมิเตอร์'}
+                </span>
+              </button>
+            )}
 
-            {/* Quick Walkthrough Button */}
-            <button
-              onClick={onOpenWalkthrough}
-              className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm flex items-center space-x-1.5 shadow-md transition-all cursor-pointer"
-            >
-              <PenSquare className="w-4 h-4" />
-              <span>จดมิเตอร์ด่วน</span>
-            </button>
+            {/* Quick Action Button dependent on mode */}
+            {portalMode === 'recorder' ? (
+              <button
+                onClick={onOpenWalkthrough}
+                className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm flex items-center space-x-1.5 shadow-md transition-all cursor-pointer"
+              >
+                <PenSquare className="w-4 h-4" />
+                <span>เดินจดมิเตอร์</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => onOpenBuildingSheet ? onOpenBuildingSheet() : onOpenWalkthrough()}
+                className="bg-violet-600 hover:bg-violet-500 active:scale-95 text-white font-bold px-3 py-2 rounded-xl text-xs sm:text-sm flex items-center space-x-1.5 shadow-md transition-all cursor-pointer ring-1 ring-violet-300/40"
+              >
+                <TableProperties className="w-4 h-4 text-violet-200" />
+                <span>รายงานรูปภาพมิเตอร์</span>
+              </button>
+            )}
 
             {/* Google Workspace Auth Button / Profile */}
             {currentUser ? (

@@ -35,7 +35,7 @@ import {
 } from './utils/thaiDate';
 
 import { Header } from './components/Header';
-import { NavigationTabs, TabKey } from './components/NavigationTabs';
+import { NavigationTabs, TabKey, PortalMode } from './components/NavigationTabs';
 import { BuildingSheetTab } from './components/BuildingSheetTab';
 import { MeterPhotoReportTab } from './components/MeterPhotoReportTab';
 import { RoomGridTab } from './components/RoomGridTab';
@@ -53,8 +53,32 @@ import { CheckCircle2, AlertTriangle } from 'lucide-react';
 export default function App() {
   // Current Month State (e.g. 2026-09 matching user's official PDF)
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-09');
-  const [currentTab, setCurrentTab] = useState<TabKey>('buildingSheet');
+
+  // 2 Separate Portals: 'recorder' (หน้าผู้จดมิเตอร์) vs 'admin' (หน้าหลังบ้าน & รายงาน)
+  const [portalMode, setPortalMode] = useState<PortalMode>(() => {
+    const saved = localStorage.getItem('dorm_portal_mode');
+    return (saved === 'recorder' || saved === 'admin') ? saved : 'recorder';
+  });
+
+  const [currentTab, setCurrentTab] = useState<TabKey>(() => {
+    const saved = localStorage.getItem('dorm_portal_mode');
+    return saved === 'admin' ? 'photoReport' : 'walkthrough';
+  });
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>('chaiya');
+
+  const handlePortalChange = useCallback((mode: PortalMode) => {
+    setPortalMode(mode);
+    localStorage.setItem('dorm_portal_mode', mode);
+    if (mode === 'recorder') {
+      setCurrentTab(prev => (prev === 'walkthrough' || prev === 'grid' || prev === 'buildingSheet' ? prev : 'walkthrough'));
+    } else {
+      setCurrentTab(prev => (prev === 'photoReport' || prev === 'monthlyReport' || prev === 'buildingSheet' || prev === 'invoices' || prev === 'workspace' || prev === 'settings' ? prev : 'photoReport'));
+    }
+  }, []);
+
+  const handleTogglePortal = useCallback(() => {
+    handlePortalChange(portalMode === 'recorder' ? 'admin' : 'recorder');
+  }, [portalMode, handlePortalChange]);
 
   // Master records database
   const [dbRecords, setDbRecords] = useState<Record<string, Record<string, MeterRecord>>>({});
@@ -578,7 +602,16 @@ export default function App() {
       <Header
         selectedMonth={selectedMonth}
         onMonthChange={setSelectedMonth}
-        onOpenWalkthrough={() => setCurrentTab('walkthrough')}
+        onOpenWalkthrough={() => {
+          setPortalMode('recorder');
+          setCurrentTab('walkthrough');
+        }}
+        onOpenBuildingSheet={() => {
+          setPortalMode('admin');
+          setCurrentTab('photoReport');
+        }}
+        portalMode={portalMode}
+        onTogglePortal={handleTogglePortal}
         totalRooms={MASTER_ROOMS.length}
         recordedCount={Object.keys(currentMonthRecords).length}
         totalRevenue={monthlyAnalytics.totalRevenue}
@@ -588,8 +621,10 @@ export default function App() {
         isLoggingIn={isLoggingIn}
       />
 
-      {/* Navigation Tabs */}
+      {/* Navigation Tabs with 2-Portal Segmented Switcher */}
       <NavigationTabs
+        portalMode={portalMode}
+        onPortalChange={handlePortalChange}
         currentTab={currentTab}
         onTabChange={(tab) => {
           setCurrentTab(tab);
@@ -621,8 +656,11 @@ export default function App() {
             onExportDocs={triggerExportDocs}
             isExportingSheets={isExportingSheets}
             isExportingDocs={isExportingDocs}
+            onOpenPhotoReport={() => {
+              setPortalMode('admin');
+              setCurrentTab('photoReport');
+            }}
             onShowToast={showToast}
-            onOpenPhotoReport={() => setCurrentTab('photoReport')}
           />
         )}
 
